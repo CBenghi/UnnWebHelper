@@ -1,51 +1,161 @@
 console.log('content.js executed');
+var documentContainer;
+var pageToDo = 0;
+var totalPages = -1;
+var nextScroll = 0;
+var pages = [];
+var highlightData = [];
+var downloadTimer;
+var authorName = "";
+window.addEventListener ("load", initializeState, false);
 
-window.addEventListener ("load", myMain, false);
-
-function executeDownload() {
-    console.log("Event triggered");
+function download(filename, text) 
+{
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/html;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
 }
 
-function myMain (evt) {
+function EvaluateDownload()
+{
+    if (totalPages < 1)
+    {
+        return;
+    }
+    var data = "<html><head><style>body {background: #ddd;} .region.document-region {  background: rgba(82, 199, 219, 0.4);}.tin-page { margin: 15px; position: relative;}</style></head><body>";
+    for (var i = 0; i < totalPages; i++ )
+    {
+        data += '<div class="tin-page"><img src="' + pages[i] + '" alt="Page ' + i+1 + '" />\r\n';
+        // fix div closure
+        var t = highlightData[i].replace('position: absolute;"/>', 'position: absolute;"></div>');
+        data +=  highlightData[i];
+        data += "</div>\r\n";
+    }
+    data += "</body></html>"
+    var fileName = 'AI Detection ' + authorName + '.html'
+    download(fileName, data);
+}
+
+function GetShadow(starting, selectors)
+{
+    var thisSelector = selectors.pop();
+    var pageLayerContainer = starting.querySelector(thisSelector);
+    if (pageLayerContainer)
+    {
+        let shadow = pageLayerContainer.shadowRoot;
+        if(shadow) {
+            if (selectors.length > 0)
+            {
+                return GetShadow(shadow, selectors);
+            }
+            else
+            {
+                return shadow;
+            }
+        }
+    }
+    return null;
+}
+
+function downloadLoop () {
+    // try to get the next page
+    // 
+    if (totalPages == -1)
+    {
+        var pgDiv = documentContainer.querySelector(".page-counter"); 
+        if (pgDiv)
+        {
+            let re = /Page \d+ of (\d+)/;
+            const content = pgDiv.innerHTML;
+            const pgm = content.match(re);
+            // console.log(pgm[1]);
+            totalPages = parseInt(pgm[1]);
+        }
+    }
+    var nextPageClassName = ".bw-page.bw-page-" + pageToDo;
+    var page = documentContainer.querySelector(nextPageClassName); 
+    if (page)
+    {
+        var canvas = page.querySelector("canvas"); 
+        if (canvas)
+        {
+            var canvadData = canvas.toDataURL();
+            nextScroll = canvas.clientHeight;
+            
+            pages.push(canvadData);
+            pageToDo++;
+            // console.log('<div><img src="' + canvadData + '" alt="Page ' + pageToDo + '" /><div>');
+            // var pageLayer = GetShadow(page, ["tii-aiw-page-layer", "tii-sws-page-layer-container"]);
+            var pageLayer = GetShadow(page, ["tii-aiw-page-layer"]);
+            if (pageLayer)
+            {
+                highlightData.push(pageLayer.innerHTML);
+                console.log(pageLayer.innerHTML);
+            }
+
+            if (pageToDo == totalPages)
+            {
+                // we have completed
+                clearInterval(downloadTimer);
+                EvaluateDownload();
+            }
+        }
+    }
+    else
+    {
+        // scroll down a bit
+        var scroll = Math.max(nextScroll, 100);
+        documentContainer.scrollTop = documentContainer.scrollTop + scroll;
+    }
+}
+
+function executeDownload() {
+    // console.log("Document scroll: ", documentContainer.scrollTop);
+    // var ch = documentContainer.firstChild;
+    // var h = ch.clientHeight;
+    // documentContainer.scrollTop = h/30;
+    // console.log("Document scroll: ", documentContainer.scrollTop);
+    console.log("Initializing capture");
+    documentContainer.scrollTop = 0;
+    pages = [];
+    highlightData = [];
+    downloadTimer = setInterval (downloadLoop, 1000);
+}
+
+// discovers the various elements needed to control the download of information
+// this is based on a recurring timed loop, set at an interval, then clears itself when done
+function initializeState (evt) {
     var jsInitChecktimer = setInterval (checkForJS_Finish, 1000);
-    var t = 0;
-    var top;
     var element;
-    var workspace;
-    var documentContainer;
-    var authorName;
+    var authorNameElement;
     var nextSelector = "tii-router";
-    let selectors = [".document-container", "tii-doc-glyph-document", "tii-sws-content-container", "tii-sws-submission-workspace", "aiwa-home"];
+    let selectors = [".bw-document-root", "tii-doc-glyph-document", "tii-sws-content-container", "tii-sws-submission-workspace", "aiwa-home"];
     function checkForJS_Finish () {
-        // const collection = document.getElementsByClassName("document-container");     
-        // const collection = document.getElementsByTagName("tii-ai-writing-app") 
         if(!element)
         {
-            console.log("Found");
+            console.log("Searching top element: tii-ai-writing-app");
             element = document.querySelector('tii-ai-writing-app');
         }
         if (nextSelector != "" && element)
         {
-            console.log("loop for: ", nextSelector);
-            console.log("element: ", element.innerHTML);
+            console.log("Searching: ", nextSelector);
             let shadow = element.shadowRoot;
-            console.log("shadow: ", shadow.innerHTML);            
             if(shadow) {
-                // console.log("shadow found, state", shadow.mode);
-                // shadow.mode = 'closed'; // If it is open, close it to stop people stealing our secrets!
-                // console.log(shadow.innerHTML);
                 var tmp = shadow.querySelector(nextSelector); 
                 if (tmp)
                 {
                     element = tmp;
                     if (nextSelector == "tii-sws-submission-workspace")
                     {
-                        console.log("Workspace set");
-                        workspace = element;
-                        authorName = element.querySelector(".author-name");
-                        console.log(authorName.innerHTML);
+                        // in the workspace we also get the name, to which we will add the download event on click
+                        authorNameElement = element.querySelector(".author-name");
+                        authorName = authorNameElement.innerHTML; 
+                        // console.log(authorNameElement.innerHTML);
                     }
-                    // pop
                     if (selectors.length>0)
                     {
                         nextSelector = selectors.pop();
@@ -54,26 +164,6 @@ function myMain (evt) {
                     { 
                         documentContainer = element;
                         nextSelector = "";
-                        if (false)
-                        {
-                            // finished this selector navigation
-                            if (!documentContainer)
-                            {
-                                documentContainer = element;
-                                element = workspace;
-                                nextSelector = "tii-sws-header";
-                                selectors = [".author-name"];
-                            }
-                            else if (!authorName)
-                            {
-                                authorName = element;
-                                nextSelector = "";
-                            }
-                            else
-                            {
-                                nextSelector = "";
-                            }
-                        }
                     }
                 }
             }
@@ -84,10 +174,8 @@ function myMain (evt) {
         {
             clearInterval(jsInitChecktimer);
             console.log("Done");
-            console.log(documentContainer.outerHTML);
-            console.log(authorName.outerHTML);
-            authorName.addEventListener("click", executeDownload);
-            // DO YOUR STUFF HERE.
+            authorNameElement.addEventListener("click", executeDownload);
+            authorNameElement.style.color = "green";
             // nothing else to do in init
         }
     }
