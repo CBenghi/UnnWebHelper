@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "UNN",
-  "description": "Does stuff for the university online resources.",
+  "description": "Gets data from the university online resources of affiliate sites.",
   "version": "1.0",
   "icons": {
     "16": "images/icon-16.png",
@@ -12,9 +12,16 @@
   "permissions": ["scripting", "activeTab"],
   "content_scripts": [
     {
-      "js": ["scripts/content.js"],
+      "js": ["scripts/contentAI.js"],
       "matches": [
         "https://awo-usw2.integrity.turnitin.com/*"
+      ],
+      "run-at": "document_end"
+    },
+    {
+      "js": ["scripts/contentOriginality.js"],
+      "matches": [
+        "https://ev.turnitinuk.com/app/carta/*"
       ],
       "run-at": "document_end"
     }

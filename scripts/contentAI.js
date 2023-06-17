@@ -26,13 +26,13 @@ function EvaluateDownload()
     {
         return;
     }
-    var data = "<html><head><style>body {background: #ddd;} .region.document-region {  background: rgba(82, 199, 219, 0.4);}.tin-page { margin: 15px; position: relative;}</style></head><body>";
+    var data = "<html><head><style>body {background: #ddd;} .region.document-region {  background: rgba(82, 199, 219, 0.4);}.tin-page { margin: 15px; position: relative;}</style></head><body>\r\n";
     for (var i = 0; i < totalPages; i++ )
     {
-        data += '<div class="tin-page"><img src="' + pages[i] + '" alt="Page ' + i+1 + '" />\r\n';
-        // fix div closure
+        data += '<div class="tin-page">\r\n\t<img alt="Page ' + (i+1) + '" src="' + pages[i] + '" />\r\n';
+        
         var t = highlightData[i].replace('position: absolute;"/>', 'position: absolute;"></div>');
-        data +=  highlightData[i];
+        data +=  "\t" + highlightData[i] + "\r\n";
         data += "</div>\r\n";
     }
     data += "</body></html>"
@@ -120,6 +120,7 @@ function executeDownload() {
     // documentContainer.scrollTop = h/30;
     // console.log("Document scroll: ", documentContainer.scrollTop);
     console.log("Initializing capture");
+    pageToDo = 0;
     documentContainer.scrollTop = 0;
     pages = [];
     highlightData = [];
@@ -172,10 +173,26 @@ function initializeState (evt) {
         // end or report progress
         if (nextSelector == "")
         {
+            // adjust name display
             clearInterval(jsInitChecktimer);
             console.log("Done");
             authorNameElement.addEventListener("click", executeDownload);
             authorNameElement.style.color = "green";
+            downloadImage.style.cursor = 'pointer';
+
+            // add image for download
+            var downloadImage = document.createElement('span');
+            downloadImage.innerHTML = " (download report)"
+            // downloadImage.innerHTML = '<polyline data-name="Right" fill="none" id="Right-2" points="7 16.4 12 21.5 17 16.4" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/><line fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" x1="12" x2="12" y1="2.5" y2="19.2"/>Sorry, your browser does not support inline SVG.'
+            // var t = chrome.runtime.getURL('images/icon-32.png');
+            // var t2 = chrome.runtime.getURL('/images/icon-32.png');
+            // downloadImage.setAttribute('src', t);
+            // downloadImage.setAttribute('alt', "download script");
+            downloadImage.style.cursor = 'pointer';
+
+            downloadImage.addEventListener("click", executeDownload);
+            authorNameElement.appendChild(downloadImage);
+
             // nothing else to do in init
         }
     }
