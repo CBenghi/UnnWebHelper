@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "UNN",
-  "description": "Gets data from the university online resources of affiliate sites.",
+  "name": "UNN Resources",
+  "description": "Gets data from the online resources of affiliate sites used by Northumbria University.",
   "version": "1.0",
   "icons": {
     "16": "images/icon-16.png",
